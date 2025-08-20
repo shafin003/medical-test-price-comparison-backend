@@ -134,10 +134,6 @@ const hospitalSchema = new mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
-		home_collection: {
-			type: Boolean,
-			default: false,
-		},
 		parking_available: {
 			type: Boolean,
 			default: false,
