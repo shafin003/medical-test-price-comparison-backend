@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { DEPARTMENTS, HOSPITAL_FACILITIES, HOSPITAL_TYPE, LANGUAGE_SPOKEN } from '../constants/enum';
+import { DEPARTMENTS, HOSPITAL_FACILITIES, HOSPITAL_TYPE, LANGUAGE_SPOKEN } from '../constants/enum.js';
 
 const hospitalSchema = new mongoose.Schema(
 	{
@@ -54,7 +54,7 @@ const hospitalSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 			trim: true,
-			match: [/^\+?[1-9]\d{1,14}$/, 'Please fill a valid bangladeshi phone number'],
+			match: [/^(\+880|880|0)?1[3-9]\d{8}$/, 'Please provide a valid Bangladeshi phone number'],
 			unique: true,
 		},
 		email: {
@@ -62,7 +62,7 @@ const hospitalSchema = new mongoose.Schema(
 			required: true,
 			trim: true,
 			lowercase: true,
-			match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address.'],
+			match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email address'],
 		},
 		website: {
 			type: String,
@@ -198,7 +198,7 @@ const hospitalSchema = new mongoose.Schema(
 		ambulance_contact: {
 			type: String,
 			trim: true,
-			match: [/^\+?[1-9]\d{1,14}$/, 'Please fill a valid bangladeshi phone number'],
+			match: [/^(\+880|880|0)?1[3-9]\d{8}$/, 'Please provide a valid Bangladeshi phone number'],
 		},
 		accreditations: [
 			{
@@ -248,19 +248,75 @@ const hospitalSchema = new mongoose.Schema(
 				trim: true,
 			},
 		],
-		created_at: {
-			type: Date,
-			default: Date.now,
-		},
-		updated_at: {
-			type: Date,
-			default: Date.now,
-		},
 	},
 	{
 		timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+		versionKey: false,
 	}
 );
+
+// Indexes for better query performance
+hospitalSchema.index({ city: 1 });
+hospitalSchema.index({ division: 1 });
+hospitalSchema.index({ hospital_type: 1 });
+hospitalSchema.index({ verified: 1 });
+hospitalSchema.index({ featured: 1 });
+hospitalSchema.index({ departments: 1 });
+hospitalSchema.index({ facilities: 1 });
+hospitalSchema.index({ latitude: 1, longitude: 1 }); // Geospatial index
+hospitalSchema.index({ name: 'text', description: 'text' }); // Text search index
+
+// Static method to find hospitals by location
+hospitalSchema.statics.findByLocation = function(city, division = null) {
+	const query = { city: new RegExp(city, 'i') };
+	if (division) {
+		query.division = new RegExp(division, 'i');
+	}
+	return this.find(query);
+};
+
+// Static method to find hospitals by department
+hospitalSchema.statics.findByDepartment = function(department) {
+	return this.find({ departments: { $in: [department] } });
+};
+
+// Static method to find nearby hospitals (requires geospatial data)
+hospitalSchema.statics.findNearby = function(lat, lng, maxDistance = 5000) {
+	return this.find({
+		latitude: {
+			$gte: lat - (maxDistance / 111000), // Approximate conversion
+			$lte: lat + (maxDistance / 111000)
+		},
+		longitude: {
+			$gte: lng - (maxDistance / (111000 * Math.cos(lat * Math.PI / 180))),
+			$lte: lng + (maxDistance / (111000 * Math.cos(lat * Math.PI / 180)))
+		}
+	});
+};
+
+// Instance method to get hospital summary
+hospitalSchema.methods.getSummary = function() {
+	return {
+		id: this._id,
+		name: this.name,
+		city: this.city,
+		division: this.division,
+		hospital_type: this.hospital_type,
+		phone: this.phone,
+		emergency_service: this.emergency_service,
+		verified: this.verified,
+		featured: this.featured
+	};
+};
+
+// Instance method to check if hospital is open now
+hospitalSchema.methods.isOpenNow = function() {
+	const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+	const today = days[new Date().getDay()];
+	const todayHours = this.operating_hours[today];
+
+	return todayHours && todayHours.toLowerCase() !== 'closed';
+};
 
 const Hospitals = mongoose.model('Hospitals', hospitalSchema);
 export default Hospitals;
