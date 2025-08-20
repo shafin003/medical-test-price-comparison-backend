@@ -37,6 +37,6 @@ router.get('/nearby', findNearbyHospitals);
 router.route('/').get(getAllHospitals).post(createHospital);
 
 // Route for getting, updating, and deleting a single hospital by its ID
-router.route('/:id').get(getHospitalById).put(updateHospitalById).delete(deleteHospitalById);
+router.route('/:id').get(getHospitalById).put(updateHospitalById).delete(deleteHospitalById).patch(updateHospitalById);
 
 export default router;
