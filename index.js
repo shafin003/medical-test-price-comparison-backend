@@ -15,19 +15,18 @@ const app = express();
 app.use(express.json());
 
 
+app.get('/', (req, res) => {
+	res.send('Hello World!');
+});
+
 // --- API Routes ---
 app.use('/api/hospitals', hospitalRoutes);
 
 // --- Error Handling ---
-//custome not found middleware
 app.use(notFound);
-// Custom error-handling middleware.
 app.use(errorHandler);
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
+// Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
 	console.log(`Server is running on port ${port}`);
