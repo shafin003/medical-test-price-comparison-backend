@@ -5,7 +5,6 @@ import hospitalRoutes from './src/routes/hospitalRoutes.js';
 import connectDB from './src/config/db.js';
 import notFound from './src/middleware/notFound.js';
 
-// Load environment variables from .env file
 dotenv.config();
 
 // Connect to MongoDB
